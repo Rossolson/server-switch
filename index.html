@@ -2,104 +2,96 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bookmarklet generator</title>
+    <title>Bookmarklet generator for URL rotation</title>
     <style>
-fieldset input, output {
+body {
+    margin: 2% auto auto;
+    max-width: 50em;
+    font-family: sans-serif;
+}
+label, fieldset input, output {
     display: block;
+    margin: 1em 0;
 }
 form, #instructions {
     float: left;
-    width: 45%;
-    padding: 5px;
+    width: 40%;
+    margin-left: 2em;
 }
-#explanations {
-    border-left: 2px solid #ccc;
+ul.examples {
+    display: inline-block;
+    z-index: 1000;
+    background: white;
+    color: black;
+    border: 1px solid lightgray;
+    padding: 5px;
+    margin-left: 2em;
+}
+ul.examples li{
+    display: block;
 }
 [hidden=true] {
     display: none;
 }
+
     </style>
 </head>
-<h1>Bookmarklet generator</h1>
-<p>Switch between different versions of a website (production, stage, working directory, etc)</p>
+<h1>Bookmarklet generator for URL rotation</h1>
+<p><i>Rotate between different versions of a website by changing the URL.</i></p>
 <form>
-    <label>Bookmark title: <input id="bookmark-title" placeholder="Switch example.com"></label>
+    <label>Bookmark title: <input id="bookmark-title" placeholder="Rotate!"></label>
     <fieldset>
-        <legend>Domains</legend>
-        <input class="domain" placeholder="www.example.com">
-        <input class="domain" placeholder="stage.example.com">
-        <input class="domain" placeholder="example.local">
+        <legend>Strings</legend>
+        <input class="needle" value="en_US">
+        <input class="needle" value="de_DE">
+        <input class="needle" value="fr_FR">
+        <input class="needle" value="ja_JP">
+        <input class="needle" value="zh_CN">
         <button type="button">+</button>
     </fieldset>
-    <input type="submit" value="Generate boorkmarklet">
+    <input type="submit" value="Generate bookmarklet">
     <output hidden="true">Drag me or copy me: <a href="#"></a></output>
 </form>
 
 <div id="instructions">
-    <p>This will generate a bookmarklet that looks like this:</p>
-    <ul style="display: inline-block; z-index: 1000; background: white; color: black; border: 2px solid black; padding: 5px;">
-        <li style="display: block;">
-            <a href="#">www.example.com</a>
-        </li>
-        <li style="display: block;">
-            <a href="#">stage.example.com</a>
-        </li>
-        <li style="display: block;">
-            <a href="#">example.local</a>
-        </li>
+    <p>This will generate a bookmarklet that replaces a string in the list with the next string:</p>
+    <ul class="examples">
+        <li><a href="#">www.example.com</a></li>
+        <li><a href="#">stage.example.com</a></li>
+        <li><a href="#">example.local</a></li>
     </ul>
-    <p>It will take you to the exact same page on another domain.</p>
-    <p>If you have urls in the form <em>user.domain.com</em>, it can switch between <em>user.domain.com</em> and <em>user.stage.domain.com</em>. Just enter <em>domain.com</em> and <em>stage.domain.com</em>. </p>
+    <p>... will take you to the exact same page on another domain. Or replace a query string value with the next one:</p>
+    <ul class="examples">
+        <li><a href="#">locale=en_US</a></li>
+        <li><a href="#">locale=en_XA</a></li>
+        <li><a href="#">locale=fr_FR</a></li>
+    </ul>
+    <p>Each time you click the bookmarklet, the next value will be pushed into the URL and the page will be reloaded.</p>
 </div>
 <script>
-function generateBookarklet(e) {
+function generateBookmarklet(e) {
     e.preventDefault();
-    // get all input,
-    var domains = [];
-    var domainsInput = document.querySelectorAll('input.domain');
-    for (var i=0, il=domainsInput.length; i<il; i++) {
-        var domain = domainsInput[i].value;
-        if (domain.length > 0) {
-            domains.push('"' + domain + '"');
+    var needles = [];
+    var needlesInput = document.querySelectorAll('input.needle');
+    for (var i=0, il=needlesInput.length; i<il; i++) {
+        var needle = needlesInput[i].value;
+        if (needle.length > 0) {
+            needles.push('"' + needle + '"');
         }
     }
-    domainArray= '[' + domains.join(',') + ']';
-    
+    needleArray= '[' + needles.join(',') + ']';
+
     // generate bookmark string
-    var bookmarklet = 'javascript:(function(){var domains=' + domainArray + ', \
-loc=window.location, \
-path=loc.pathname+loc.search+loc.hash, \
-url_prefix="http://"; \
-\
-for(var i=0;i<domains.length;i++){ \
-    var index_host=loc.href.indexOf(domains[i]); \
-    if(index_host>=0){ \
-        domains.splice(i,1); \
-        url_prefix=loc.href.slice(0,index_host); \
-    } \
-} \
-/*if(!c){ \
-    return \
-}*/ \
-var ul=document.createElement("ul"); \
-ul.style.position="fixed"; \
-ul.style.zIndex=1000; \
-ul.style.background="#fff"; \
-ul.style.color="#000"; \
-ul.style.border="2px solid #000"; \
-ul.style.top="0"; \
-ul.style.left="0"; \
-ul.style.padding="5px"; \
-for(var i=0;i<domains.length;i++){ \
-    var a=document.createElement("a"); \
-    a.href=url_prefix+domains[i]+path; \
-    a.appendChild(document.createTextNode(domains[i])); \
-    var li=document.createElement("li"); \
-    li.style.display="block"; \
-    li.appendChild(a); \
-    ul.appendChild(li) \
-} \
-document.body.appendChild(ul) \
+    var bookmarklet = 'javascript:(function(){var strs=' + needleArray + ',\
+loc=window.location;\
+for(var i=0;i<strs.length;i++){\
+  var pos=loc.href.indexOf(strs[i]);\
+  if(pos>=0){\
+    j=((i+1)%strs.length);\
+    newLoc=loc.href.split(strs[i]).join(strs[j]);\
+    loc.assign(newLoc);\
+  }\
+}\
 })();';
 
     // generate link to copy.
@@ -108,7 +100,7 @@ document.body.appendChild(ul) \
     a.href = bookmarklet;
     var title = document.getElementById('bookmark-title').value;
     if (title.length == 0) {
-        title = "Switch servers";
+        title = "Rotate!";
     };
     a.innerHTML = title;
     output.removeAttribute('hidden');
@@ -116,12 +108,10 @@ document.body.appendChild(ul) \
 
 function addField(e) {
     var input = document.createElement('input');
-    input.className = "domain";
-    input.placeholder = "another.domain.com";
+    input.className = "needle";
+    input.placeholder = "another string";
     e.target.parentNode.insertBefore(input, e.target);
 }
-document.querySelector('form').addEventListener('submit', generateBookarklet, false);
+document.querySelector('form').addEventListener('submit', generateBookmarklet, false);
 document.querySelector('button').addEventListener('click', addField, false);
 </script>
-
-
