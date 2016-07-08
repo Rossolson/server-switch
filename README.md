@@ -12,7 +12,7 @@ Great for QA/QE of your website's query string-enabled values.
 Now when you are on a page, clicking the bookmarklet will cause the browser to:
 
 0. Look through the current URL of the window for the first string you entered.
-0. If it finds that string, the URL will be changed to replace that string with the next string in the list. (If it is the last string, the frist string will be put into the URL.)
+0. If it finds that string, the URL will be changed to replace that string with the next string in the list. (If it is the last string, the first string will be put into the URL.)
 0. The page will reload using the new URL.
 0. If none of the strings are found, no change will be made.
 
