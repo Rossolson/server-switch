@@ -4,35 +4,77 @@
     <meta charset="utf-8">
     <title>Bookmarklet generator for URL rotation</title>
     <style>
-body {
-    margin: 2% auto auto;
-    max-width: 50em;
-    font-family: sans-serif;
-}
-label, fieldset input, output {
-    display: block;
-    margin: 1em 0;
-}
-form, #instructions {
-    float: left;
-    width: 40%;
-    margin-left: 2em;
-}
-ul.examples {
-    display: inline-block;
-    z-index: 1000;
-    background: white;
-    color: black;
-    border: 1px solid lightgray;
-    padding: 5px;
-    margin-left: 2em;
-}
-ul.examples li{
-    display: block;
-}
-[hidden=true] {
-    display: none;
-}
+        body {
+            margin: 2% auto auto;
+            max-width: 50em;
+            min-width: 35em;
+            font-family: sans-serif;
+            padding: 0 2em;
+        }
+        label, fieldset input, output {
+            display: block;
+            margin: 1em 0;
+        }
+        fieldset {
+            padding-right: 0;
+        }
+        .stringset {
+            max-height: 24em;
+            overflow-y: scroll;
+            margin: 0;
+        }
+        form, #instructions {
+            display: table-cell;
+            float: left;
+            width: 45%;
+            margin-right: 1em;
+            color: #555;
+            cursor: default;
+        }
+        ul.examples {
+            display: inline-block;
+            border: 1px solid lightgray;
+            padding: 1em;
+            margin-left: 2em;
+        }
+        ul.examples li {
+            display: block;
+            padding: .25em;
+            cursor: default;
+        }
+        ul.examples li a {
+            cursor: default;
+        }
+        label.optional {
+            margin-left: 2em;
+        }
+        label.optional input {
+            margin-left: -1.8em
+        }
+
+        [hidden=true] {
+            display: none;
+        }
+        output a, output a:link, output a:visited {
+            color: #000;
+            background-color: #ddd;
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin: 0;
+            white-space: nowrap;
+            text-decoration: none;
+            cursor: grab;
+            cursor: -webkit-grab;
+        }
+        output a:before {
+            content: '⋮ ';
+            color: #eee;
+        }
+        output a:hover {
+            color: #fff;
+            background-color: #999;
+            text-decoration: none;
+        }
 
     </style>
 </head>
@@ -42,31 +84,36 @@ ul.examples li{
     <label>Bookmark title: <input id="bookmark-title" placeholder="Rotate!"></label>
     <fieldset>
         <legend>Strings</legend>
-        <input class="needle" value="en_US">
-        <input class="needle" value="de_DE">
-        <input class="needle" value="fr_FR">
-        <input class="needle" value="ja_JP">
-        <input class="needle" value="zh_CN">
+        <div class="stringset">
+        <input class="needle" value="locale=en_US">
+        <input class="needle" value="locale=de_DE">
+        <input class="needle" value="locale=ru_RU">
+        <input class="needle" value="locale=zh_CN">
         <button type="button">+</button>
+        </div>
     </fieldset>
+    <label class="optional">
+        <input type="checkbox" checked id="adddefault">
+        Add <code>?[first string]</code> to the end of the URL when none is found as in:<br /> <code>example.com/page/?locale=en_US</code>
+    </label>
     <input type="submit" value="Generate bookmarklet">
     <output hidden="true">Drag me or copy me: <a href="#"></a></output>
 </form>
 
 <div id="instructions">
-    <p>This will generate a bookmarklet that replaces a string in the list with the next string:</p>
+    <p>This will generate a bookmarklet that replaces a string in the list with the next string. For example using this:</p>
     <ul class="examples">
         <li><a href="#">www.example.com</a></li>
         <li><a href="#">stage.example.com</a></li>
         <li><a href="#">example.local</a></li>
     </ul>
-    <p>... will take you to the exact same page on another domain. Or replace a query string value with the next one:</p>
+    <p>…will take you to the exact same page on another domain. Or you can replace a query string name/value pair with the next one:</p>
     <ul class="examples">
         <li><a href="#">locale=en_US</a></li>
         <li><a href="#">locale=en_XA</a></li>
         <li><a href="#">locale=fr_FR</a></li>
     </ul>
-    <p>Each time you click the bookmarklet, the next value will be pushed into the URL and the page will be reloaded.</p>
+    <p>Each time you click the bookmarklet, the next string will be pushed into the URL and the page will be reloaded.</p>
 </div>
 <script>
 function generateBookmarklet(e) {
@@ -81,23 +128,29 @@ function generateBookmarklet(e) {
     }
     needleArray= '[' + needles.join(',') + ']';
 
+    var addDefault = document.querySelectorAll('input#adddefault');
+    var addDefaultJs = '';
+    if (addDefault[0].checked) { addDefaultJs = 'if(!flag){newLoc=loc.href+"?"+' + needles[0] + ';loc.assign(newLoc);}'; }
+
     // generate bookmark string
-    var bookmarklet = 'javascript:(function(){var strs=' + needleArray + ',\
-loc=window.location;\
+    var bookmarkletJs = 'javascript:(function(){var strs=' + needleArray + ',\
+loc=window.location,\
+flag=false;\
 for(var i=0;i<strs.length;i++){\
   var pos=loc.href.indexOf(strs[i]);\
   if(pos>=0){\
     j=((i+1)%strs.length);\
     newLoc=loc.href.split(strs[i]).join(strs[j]);\
     loc.assign(newLoc);\
+    flag=true;\
   }\
-}\
+}' + addDefaultJs + '\
 })();';
 
     // generate link to copy.
     var output = document.querySelector('output');
     var a = output.querySelector('a');
-    a.href = bookmarklet;
+    a.href = bookmarkletJs;
     var title = document.getElementById('bookmark-title').value;
     if (title.length == 0) {
         title = "Rotate!";
